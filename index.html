@@ -27,7 +27,7 @@
     sb_beacon('send', 'pageview');
   </script>
 
-  <!-- Contact Form Tracking from the guide (slightly trimmed comments) -->
+  <!-- Contact Form Tracking -->
   <script>
   (function() {
     'use strict';
@@ -108,23 +108,38 @@
       });
     }
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initializeTracking);
-    } else { initializeTracking(); }
+    function safeOnReady(fn) {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
+      else fn();
+    }
 
-    setTimeout(initializeTracking, 2000);
+    // Run once on ready
+    safeOnReady(initializeTracking);
+    // Retry after 2s (for late-mounted UI)
+    setTimeout(function(){ safeOnReady(initializeTracking); }, 2000);
+
+    // SAFER MutationObserver: wait for a valid Node (body or documentElement)
     const observer = new MutationObserver(function(mutations) {
       for (const m of mutations) {
         if (m.addedNodes && m.addedNodes.length > 0) {
-          setTimeout(initializeTracking, 500);
+          setTimeout(function(){ safeOnReady(initializeTracking); }, 500);
         }
       }
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    function startObserver() {
+      const target = document.body || document.documentElement;
+      if (!target || !(target instanceof Node)) { // fallback if still not a Node
+        setTimeout(startObserver, 50);
+        return;
+      }
+      try { observer.observe(target, { childList: true, subtree: true }); }
+      catch (e) { console.warn('Observer not started yet, retrying...', e); setTimeout(startObserver, 50); }
+    }
+    safeOnReady(startObserver);
   })();
   </script>
 
-  <!-- Live Chat tracking snippet (will only fire when a real HubSpot widget posts a message from allowed origins) -->
+  <!-- Live Chat tracking snippet -->
   <script>
     (function () {
       const HUBSPOT_ORIGIN_SUFFIXES = ['.hubspot.com', '.hsappstatic.net', '.usemessages.com'];
