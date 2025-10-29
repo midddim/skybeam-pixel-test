@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Skybeam Pixel Test Harness</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 2rem; line-height: 1.4; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    label { display:block; margin:.5rem 0 .25rem; }
+    input, select, textarea, button { padding:.5rem .6rem; border-radius:8px; border:1px solid #ccc; width:100%; max-width:520px; }
+    button, .btn { cursor:pointer; display:inline-block; width:auto; }
+    .row { display:flex; gap:1rem; flex-wrap:wrap; }
+    .muted { color:#666; font-size:.9rem; }
+    code { background:#f6f8fa; padding:.1rem .25rem; border-radius:6px; }
+    .get-started { margin-top: .75rem; }
+    .pill { display:inline-block; padding:.2rem .5rem; border:1px solid #ccc; border-radius:999px; font-size:.8rem; }
+    .ok { border-color:#2e7d32; color:#2e7d32; }
+  </style>
+
+  <!-- Base Skybeam Pixel (replace BEACON_ID with your real one when needed) -->
+  <script>
+    (function(e,n,t){e["$$sbFn"]=t;e[t]=e[t]||function(){(e[t].q=e[t].q||[]).push(arguments)};var c=n.getElementsByTagName("script")[0],o=n.createElement("script");o.async=true;o.src="https://www.skybeam-analytics.com/js/v1/beacon.js";c.parentNode.insertBefore(o,c)})(window,document,"sb_beacon");
+    // Put your real beacon id here for end-to-end verification:
+    sb_beacon('setup', 'beacon', '2d30989b-6de3-428d-b0b4-f67cd84ab997');
+    sb_beacon('setup', 'user_tracking', true);
+    sb_beacon('send', 'pageview');
+  </script>
+
+  <!-- Contact Form Tracking from the guide (slightly trimmed comments) -->
+  <script>
+  (function() {
+    'use strict';
+
+    // Define the sb_beacon function if it doesn't exist (for offline/local testing)
+    if (typeof window.sb_beacon === 'undefined') {
+      window.sb_beacon = function(action, type, event, data) {
+        console.log('sb_beacon called (mock):', { action, type, event, data });
+      };
+    }
+
+    function getInterestedInValue() {
+      let interestedIn = '';
+      const selectors = [
+        'select[name*="interested"]',
+        'select[name*="service"]',
+        'select[name*="care"]',
+        'input[name*="interested"]:checked',
+        'input[name*="service"]:checked',
+        'input[name*="care"]:checked',
+        '[data-field*="interested"]',
+        '[data-field*="service"]'
+      ];
+      for (let selector of selectors) {
+        const element = document.querySelector(selector);
+        if (element && element.value) { interestedIn = element.value; break; }
+      }
+      return interestedIn || 'not_specified';
+    }
+
+    function trackFormSubmission(formElement, triggerType = 'submit_button') {
+      const interestedIn = getInterestedInValue();
+      sb_beacon("send", "event", "lead", {
+        type: "form_submit",
+        form_name: "Contact Us",
+        page_url: location.href,
+        interested_in: interestedIn,
+        ts: Date.now(),
+        trigger_type: triggerType
+      });
+      console.log('Form submission tracked:', { form: formElement, interested_in: interestedIn, trigger_type: triggerType });
+    }
+
+    function trackGetStartedClick(element) {
+      const interestedIn = getInterestedInValue();
+      sb_beacon("send", "event", "lead", {
+        type: "form_submit",
+        form_name: "Contact Us",
+        page_url: location.href,
+        interested_in: interestedIn,
+        ts: Date.now(),
+        trigger_type: 'get_started_button'
+      });
+      console.log('Get Started button clicked:', { element, interested_in: interestedIn });
+    }
+
+    function initializeTracking() {
+      const allButtons = document.querySelectorAll('button, a, input[type="button"], input[type="submit"], .btn, .button');
+      allButtons.forEach(button => {
+        const text = (button.textContent || button.value || '').toLowerCase();
+        if (text.includes('get started')) {
+          button.addEventListener('click', function() { trackGetStartedClick(button); });
+        }
+      });
+
+      const forms = document.querySelectorAll('form');
+      forms.forEach(form => {
+        form.addEventListener('submit', function(e) { trackFormSubmission(form, 'form_submit'); });
+        const submitButtons = form.querySelectorAll('input[type="submit"], button[type="submit"], button:not([type])');
+        submitButtons.forEach(button => {
+          const text = (button.textContent || button.value || '').toLowerCase();
+          if (text.includes('submit')) {
+            button.addEventListener('click', function() {
+              setTimeout(() => { trackFormSubmission(form, 'submit_button'); }, 100);
+            });
+          }
+        });
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeTracking);
+    } else { initializeTracking(); }
+
+    setTimeout(initializeTracking, 2000);
+    const observer = new MutationObserver(function(mutations) {
+      for (const m of mutations) {
+        if (m.addedNodes && m.addedNodes.length > 0) {
+          setTimeout(initializeTracking, 500);
+        }
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  })();
+  </script>
+
+  <!-- Live Chat tracking snippet (will only fire when a real HubSpot widget posts a message from allowed origins) -->
+  <script>
+    (function () {
+      const HUBSPOT_ORIGIN_SUFFIXES = ['.hubspot.com', '.hsappstatic.net', '.usemessages.com'];
+      function isAllowedHubSpotOrigin(origin) {
+        try { return HUBSPOT_ORIGIN_SUFFIXES.some(sfx => new URL(origin).hostname.endsWith(sfx)); }
+        catch { return false; }
+      }
+      function parseMessage(raw) {
+        if (!raw) return null;
+        if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return null; } }
+        return raw;
+      }
+      function sendChatOpenedEvent() {
+        try {
+          sb_beacon('send', 'event', 'other', { page_url: location.href, timestamp_ms: Date.now(), source: 'postMessage' });
+        } catch {}
+      }
+      function onMessage(event) {
+        if (!isAllowedHubSpotOrigin(event.origin)) return;
+        const msg = parseMessage(event.data);
+        if (msg && msg.type === 'open-change' && msg.data && msg.data.isOpen === true) {
+          sendChatOpenedEvent();
+        }
+      }
+      window.addEventListener('message', onMessage);
+    })();
+  </script>
+</head>
+<body>
+  <div class="card">
+    <h1>Skybeam Pixel Test Harness</h1>
+    <p class="muted">Use this page locally or on a free host. Open DevTools → <span class="pill ok">Network</span> to verify requests to <code>skybeam-analytics.com</code> and <span class="pill ok">Console</span> to see mock logs.</p>
+    <p><strong>Step 1.</strong> Replace <code>REPLACE_WITH_YOUR_BEACON_ID</code> in the head with your beacon ID.</p>
+  </div>
+
+  <div class="card">
+    <h2>Contact Us</h2>
+    <form id="contact-form">
+      <label for="name">Full name</label>
+      <input id="name" name="name" placeholder="Ada Lovelace" required />
+
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" placeholder="ada@example.com" required />
+
+      <label for="interested">Interested in</label>
+      <select id="interested" name="interested_service">
+        <option value="Companion Care">Companion Care</option>
+        <option value="Skilled Nursing">Skilled Nursing</option>
+        <option value="Physical Therapy">Physical Therapy</option>
+        <option value="not_specified">Other / Not sure</option>
+      </select>
+
+      <label for="notes">Notes</label>
+      <textarea id="notes" name="notes" rows="4" placeholder="Tell us more..."></textarea>
+
+      <div class="row" style="margin-top: .75rem">
+        <button type="submit">Submit</button>
+        <a href="#" class="btn get-started">Get Started</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Manual test helpers</h2>
+    <p class="muted">In the Console you can run:</p>
+    <pre>sb_beacon('send', 'event', 'lead', {type:'manual_test', ts: Date.now()})</pre>
+    <p class="muted">If you embed a real HubSpot chat, opening it should trigger the chat event.</p>
+  </div>
+</body>
+</html>
