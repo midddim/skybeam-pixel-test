@@ -3,36 +3,35 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Skybeam Pixel Test Harness</title>
+  <title>Skybeam Pixel Test Harness (Full)</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 2rem; line-height: 1.4; }
-    .card { border: 1px solid #ddd; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 2rem; line-height: 1.45; }
+    .card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
     label { display:block; margin:.5rem 0 .25rem; }
-    input, select, textarea, button { padding:.5rem .6rem; border-radius:8px; border:1px solid #ccc; width:100%; max-width:520px; }
-    button, .btn { cursor:pointer; display:inline-block; width:auto; }
-    .row { display:flex; gap:1rem; flex-wrap:wrap; }
-    .muted { color:#666; font-size:.9rem; }
+    input, select, textarea, button, a.btn { padding:.55rem .7rem; border-radius:10px; border:1px solid #d1d5db; width:100%; max-width:520px; }
+    button, .btn { cursor:pointer; display:inline-block; width:auto; background:#fff; }
+    .row { display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center; }
+    .muted { color:#6b7280; font-size:.92rem; }
     code { background:#f6f8fa; padding:.1rem .25rem; border-radius:6px; }
-    .get-started { margin-top: .75rem; }
-    .pill { display:inline-block; padding:.2rem .5rem; border:1px solid #ccc; border-radius:999px; font-size:.8rem; }
+    .pill { display:inline-block; padding:.2rem .5rem; border:1px solid #d1d5db; border-radius:999px; font-size:.8rem; }
     .ok { border-color:#2e7d32; color:#2e7d32; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
   </style>
 
-  <!-- Base Skybeam Pixel (replace BEACON_ID with your real one when needed) -->
+  <!-- Base Skybeam Pixel -->
   <script>
     (function(e,n,t){e["$$sbFn"]=t;e[t]=e[t]||function(){(e[t].q=e[t].q||[]).push(arguments)};var c=n.getElementsByTagName("script")[0],o=n.createElement("script");o.async=true;o.src="https://www.skybeam-analytics.com/js/v1/beacon.js";c.parentNode.insertBefore(o,c)})(window,document,"sb_beacon");
-    // Put your real beacon id here for end-to-end verification:
-    sb_beacon('setup', 'beacon', '9e631356-25dc-4c20-9f55-c1304cded14d');
+    // Replace with your real Beacon ID before testing
+    sb_beacon('setup', 'beacon', '330b9aae-0359-4fe7-94cb-fa19b7a717f2');
     sb_beacon('setup', 'user_tracking', true);
     sb_beacon('send', 'pageview');
   </script>
 
-  <!-- Contact Form Tracking -->
+  <!-- Contact Form & CTA Tracking (from setup guide) -->
   <script>
   (function() {
     'use strict';
 
-    // Define the sb_beacon function if it doesn't exist (for offline/local testing)
     if (typeof window.sb_beacon === 'undefined') {
       window.sb_beacon = function(action, type, event, data) {
         console.log('sb_beacon called (mock):', { action, type, event, data });
@@ -42,14 +41,9 @@
     function getInterestedInValue() {
       let interestedIn = '';
       const selectors = [
-        'select[name*="interested"]',
-        'select[name*="service"]',
-        'select[name*="care"]',
-        'input[name*="interested"]:checked',
-        'input[name*="service"]:checked',
-        'input[name*="care"]:checked',
-        '[data-field*="interested"]',
-        '[data-field*="service"]'
+        'select[name*="interested"]','select[name*="service"]','select[name*="care"]',
+        'input[name*="interested"]:checked','input[name*="service"]:checked','input[name*="care"]:checked',
+        '[data-field*="interested"]','[data-field*="service"]'
       ];
       for (let selector of selectors) {
         const element = document.querySelector(selector);
@@ -113,12 +107,9 @@
       else fn();
     }
 
-    // Run once on ready
     safeOnReady(initializeTracking);
-    // Retry after 2s (for late-mounted UI)
     setTimeout(function(){ safeOnReady(initializeTracking); }, 2000);
 
-    // SAFER MutationObserver: wait for a valid Node (body or documentElement)
     const observer = new MutationObserver(function(mutations) {
       for (const m of mutations) {
         if (m.addedNodes && m.addedNodes.length > 0) {
@@ -128,18 +119,15 @@
     });
     function startObserver() {
       const target = document.body || document.documentElement;
-      if (!target || !(target instanceof Node)) { // fallback if still not a Node
-        setTimeout(startObserver, 50);
-        return;
-      }
+      if (!target || !(target instanceof Node)) { setTimeout(startObserver, 50); return; }
       try { observer.observe(target, { childList: true, subtree: true }); }
-      catch (e) { console.warn('Observer not started yet, retrying...', e); setTimeout(startObserver, 50); }
+      catch (e) { setTimeout(startObserver, 50); }
     }
     safeOnReady(startObserver);
   })();
   </script>
 
-  <!-- Live Chat tracking snippet -->
+  <!-- Live Chat postMessage tracking (HubSpot origins only) -->
   <script>
     (function () {
       const HUBSPOT_ORIGIN_SUFFIXES = ['.hubspot.com', '.hsappstatic.net', '.usemessages.com'];
@@ -167,46 +155,115 @@
       window.addEventListener('message', onMessage);
     })();
   </script>
+
+  <!-- Extended Events Demo helpers -->
+  <script>
+    function fireLead() {
+      const cat = (document.getElementById('lead_category')?.value || '').trim();
+      const payload = {};
+      if (cat) payload.lead_category = cat;
+      sb_beacon('send', 'event', 'lead', payload);
+      console.log('Lead sent', payload);
+    }
+    function fireSignUp() {
+      const method = (document.getElementById('sign_up_method')?.value || '').trim();
+      const payload = {};
+      if (method) payload.sign_up_method = method;
+      sb_beacon('send', 'event', 'sign', payload);
+      console.log('SignUp sent', payload);
+    }
+    function fireAddToCart() {
+      const id = document.getElementById('item_id')?.value || '';
+      const name = document.getElementById('item_name')?.value || '';
+      const price = document.getElementById('item_price')?.value;
+      const qty = document.getElementById('item_qty')?.value;
+      const cat = document.getElementById('item_cat')?.value || '';
+      const payload = {};
+      if (id) payload.item_id = id;
+      if (name) payload.item_name = name;
+      if (price) payload.item_price_usd = parseFloat(price);
+      if (qty) payload.quantity = parseInt(qty, 10);
+      if (cat) payload.item_category = cat;
+      sb_beacon('send', 'event', 'add_to_cart', payload);
+      console.log('AddToCart sent', payload);
+    }
+    function firePurchase() {
+      const total = document.getElementById('total_price')?.value;
+      const payload = {};
+      if (total) payload.total_price_usd = parseFloat(total);
+      sb_beacon('send', 'event', 'purchase', payload);
+      console.log('Purchase sent', payload);
+    }
+  </script>
 </head>
 <body>
   <div class="card">
-    <h1>Skybeam Pixel Test Harness</h1>
-    <p class="muted">Use this page locally or on a free host. Open DevTools → <span class="pill ok">Network</span> to verify requests to <code>skybeam-analytics.com</code> and <span class="pill ok">Console</span> to see mock logs.</p>
-    <p><strong>Step 1.</strong> Replace <code>REPLACE_WITH_YOUR_BEACON_ID</code> in the head with your beacon ID.</p>
+    <h1>Skybeam Pixel Test Harness (Full)</h1>
+    <p class="muted">1) Замінити <code>REPLACE_WITH_YOUR_BEACON_ID</code>. 2) Відкрити DevTools → <span class="pill ok">Network</span> (фільтр: <code>skybeam-analytics.com</code>) та <span class="pill ok">Console</span>.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Contact Us</h2>
+      <form id="contact-form">
+        <label for="name">Full name</label>
+        <input id="name" name="name" placeholder="Ada Lovelace" required />
+
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" placeholder="ada@example.com" required />
+
+        <label for="interested">Interested in</label>
+        <select id="interested" name="interested_service">
+          <option value="Companion Care">Companion Care</option>
+          <option value="Skilled Nursing">Skilled Nursing</option>
+          <option value="Physical Therapy">Physical Therapy</option>
+          <option value="not_specified">Other / Not sure</option>
+        </select>
+
+        <label for="notes">Notes</label>
+        <textarea id="notes" name="notes" rows="4" placeholder="Tell us more..."></textarea>
+
+        <div class="row" style="margin-top: .75rem">
+          <button type="submit">Submit</button>
+          <a href="#" class="btn get-started">Get Started</a>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Lead (optional category)</h2>
+      <label>Lead Category</label>
+      <input id="lead_category" placeholder="INSERT_CATEGORY" />
+      <div class="row"><button onclick="fireLead()">Send Lead</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Sign Up (method)</h2>
+      <label>Sign Up Method</label>
+      <input id="sign_up_method" placeholder="email / google / apple" />
+      <div class="row"><button onclick="fireSignUp()">Send Sign Up</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Add to Cart</h2>
+      <label>Item ID</label><input id="item_id" placeholder="INSERT_ITEM_SKU" />
+      <label>Item Name</label><input id="item_name" placeholder="INSERT_ITEM_NAME" />
+      <label>Item Price USD</label><input id="item_price" type="number" step="0.01" placeholder="INSERT_ITEM_PRICE" />
+      <label>Quantity</label><input id="item_qty" type="number" step="1" min="1" placeholder="1" />
+      <label>Item Category</label><input id="item_cat" placeholder="INSERT_ITEM_CATEGORY" />
+      <div class="row"><button onclick="fireAddToCart()">Send Add To Cart</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Purchase</h2>
+      <label>Total Price USD</label><input id="total_price" type="number" step="0.01" placeholder="INSERT_TOTAL_PRICE" />
+      <div class="row"><button onclick="firePurchase()">Send Purchase</button></div>
+    </div>
   </div>
 
   <div class="card">
-    <h2>Contact Us</h2>
-    <form id="contact-form">
-      <label for="name">Full name</label>
-      <input id="name" name="name" placeholder="Ada Lovelace" required />
-
-      <label for="email">Email</label>
-      <input id="email" name="email" type="email" placeholder="ada@example.com" required />
-
-      <label for="interested">Interested in</label>
-      <select id="interested" name="interested_service">
-        <option value="Companion Care">Companion Care</option>
-        <option value="Skilled Nursing">Skilled Nursing</option>
-        <option value="Physical Therapy">Physical Therapy</option>
-        <option value="not_specified">Other / Not sure</option>
-      </select>
-
-      <label for="notes">Notes</label>
-      <textarea id="notes" name="notes" rows="4" placeholder="Tell us more..."></textarea>
-
-      <div class="row" style="margin-top: .75rem">
-        <button type="submit">Submit</button>
-        <a href="#" class="btn get-started">Get Started</a>
-      </div>
-    </form>
-  </div>
-
-  <div class="card">
-    <h2>Manual test helpers</h2>
-    <p class="muted">In the Console you can run:</p>
-    <pre>sb_beacon('send', 'event', 'lead', {type:'manual_test', ts: Date.now()})</pre>
-    <p class="muted">If you embed a real HubSpot chat, opening it should trigger the chat event.</p>
+    <h2>Manual Console Helpers</h2>
+    <p class="muted">Приклад: <code>sb_beacon('send','event','lead',{type:'manual_test',ts:Date.now()})</code></p>
   </div>
 </body>
 </html>
