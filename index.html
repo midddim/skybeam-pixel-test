@@ -22,7 +22,7 @@
   <script>
     (function(e,n,t){e["$$sbFn"]=t;e[t]=e[t]||function(){(e[t].q=e[t].q||[]).push(arguments)};var c=n.getElementsByTagName("script")[0],o=n.createElement("script");o.async=true;o.src="https://www.skybeam-analytics.com/js/v1/beacon.js";c.parentNode.insertBefore(o,c)})(window,document,"sb_beacon");
     // Beacon ID вже встановлено
-    sb_beacon('setup', 'beacon', '7fb0dbb6-7d0a-4bff-878d-7ae1fc515c3b');
+    sb_beacon('setup', 'beacon', 'f96ceae2-ac04-4fb5-81df-04f648c3572e');
     sb_beacon('setup', 'user_tracking', true);
     sb_beacon('send', 'pageview');
   </script>
@@ -192,8 +192,8 @@
       sb_beacon('send', 'event', 'sign_up', payload);
       // sb_beacon('send', 'event', 'signup', payload);
 
-      console.log('SignUp compat fired: sign, sign_up, signup', payload);
-      showToast('Sent Sign Up variants: sign / sign_up / signup');
+      console.log('SignUp fired: sign_up', payload);
+      showToast('Sent Sign Up: sign_up');
     }
 
     function fireAddToCart() {
